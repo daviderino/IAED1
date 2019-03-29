@@ -17,12 +17,14 @@ Constantes
 ===================================================*/
 #define DIM_INPUT 350       /* Valor maximo de caracteres que pode ser inserido */
 #define DIM_VARS 64         /* Dimensao maxima que uma string com dados pode ter*/
-#define DIM_PARTICIPANTS 3  /* Valor maximo de participantes por evento */
 #define DIM_PLACEHOLDER 8   /* Dimensao do array usado para separar dados recebidos */
 #define DIM_ROOMS 100       /* Numero maximo de eventos por quarto */
+
+#define NUM_PARTICIPANTS 3  /* Valor maximo de participantes por evento */
 #define NUM_ROOMS 10        /* Numero maximo de quartos */
 
 #define DELIM ":"           /* Caracter usado para delimitar os dados */
+#define EMPTY ""
 
 /*===================================================
 Estruturas
@@ -37,8 +39,7 @@ typedef struct event
     int duracao;
     int sala; 
     char responsavel[DIM_VARS]; 
-    char participantes[DIM_PARTICIPANTS][DIM_VARS];
-    int n_part;
+    char participantes[NUM_PARTICIPANTS][DIM_VARS];
 }Event;
 
 /*===================================================
@@ -48,28 +49,37 @@ Variaveis globais
     O valor -1 significa que a sala esta vazia */
 int size[10] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 
+int getParticipants(Event event)
+{
+    int i;
+
+    for(i = 0; i < NUM_PARTICIPANTS; i++)
+    {
+        if(!strcmp(event.participantes[i], EMPTY))
+        {
+            break;
+        }
+    }
+
+    return i;
+}
+
+void readString(char dest[DIM_VARS])
+{
+    int i;
+    char c;
+     
+    for(i = 0; i < DIM_INPUT-1 && (c=getchar()) != '\n' && c != EOF; i++)
+    {   
+        dest[i] = c;
+    }
+
+    dest[i] = '\0';
+}
+
 /*===================================================
 Funcooes Auxiliares
 ===================================================*/
-
-/*  
-    Descricao: inverte um dado numero
-    Input: n - valor inteiro a ser invertido
-    Output: valor invertido
-*/
-int reverseInt(int n)
-{
-    int rev = 0;
-
-    while(n != 0)
-    {
-        rev = rev * 10;
-        rev = rev + n % 10;
-        n = n / 10;
-    }
-
-    return rev;
-}
 
 /*
     Descricao: Adiciona a uma variavel que contem tempo, um dado valor
@@ -190,7 +200,7 @@ int validEvent(Event events[NUM_ROOMS][DIM_ROOMS], Event dummy)
         valid = 0;
     }
 
-    for(i = 0; i < dummy.n_part; i++)
+    for(i = 0; i < getParticipants(dummy); i++)
     { 
         if(!validPerson(events, dummy, dummy.participantes[i]))
         {
@@ -205,33 +215,82 @@ int validEvent(Event events[NUM_ROOMS][DIM_ROOMS], Event dummy)
 /*
 
 */
+int smallerDate(int date1, int date2)
+{
+    int year1, year2;
+    int month1, month2;
+    int day1, day2;
+
+    year1 = date1%10000;
+    year2 = date2%10000;
+
+    date1 = date1 / 10000;
+    date2 = date2 / 10000;
+
+    month1 = date1%100;
+    month2 = date2%100;
+
+    date1 = date1 / 100;
+    date2 = date2 / 100;
+
+    day1 = date1;
+    day2 = date2;
+    
+    if(year1 > year2)
+    {
+        return 1;
+    }
+    else if(year1 == year2 && (month1 > month2))
+    {
+        return 1;
+    }
+    else if(year1 == year2 && month1 == month2 && (day1 > day2))
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+/*
+    Ordena um dado array de eventos. Limite corresponde ao numero de eventos
+*/
 void bubbleSort(Event arr[1000], int lim)
 {
     Event dummy;
 
     int i, j;
     int a, b;
+    int swapped = 0;
 
     for(i = 0; i < lim; i++)
     {
         for(j = 0; j+1 <= lim; j++)
         {
-            a = reverseInt(arr[j].data);
-            b = reverseInt(arr[j+1].data);
+            a = arr[j].data;
+            b = arr[j+1].data;
 
-            if((a > b) || (a == b && arr[j].inicio > arr[j+1].inicio))
+            if((smallerDate(a, b)) || (a == b && arr[j].inicio > arr[j+1].inicio))
             {
                 dummy = arr[j];
                 arr[j] = arr[j+1];
                 arr[j+1] = dummy;
+                swapped = 1;
             }
+        }
+
+        if(swapped == 0)
+        {
+            break;
         }
     }
 }
 
 void writeEvent(Event event)
 {
-    switch(event.n_part)
+    switch(getParticipants(event))
     {
         case 1:
             printf("%s %08d %04d %d Sala%d %s\n* %s\n",
@@ -314,8 +373,7 @@ int addEvent(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
 
         index++;
     }
-
-    dummy.n_part = index - 6;
+    
     strcpy(dummy.descricao, placeholder[0]);
     strcpy(dummy.responsavel, placeholder[5]);
     strcpy(dummy.participantes[0], placeholder[6]);
@@ -341,6 +399,45 @@ int addEvent(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
     }
 
     return 0;
+}
+
+int smallestEventIndex(int index[NUM_ROOMS], Event events[NUM_ROOMS][DIM_ROOMS])
+{
+    int date = 0, start = 0;
+    int r, i = -1;
+
+    for(r = 0; r < NUM_ROOMS; r++)
+    {
+        if(index[r] <= size[r] && ((smallerDate(events[r][index[r]].data, date) || (events[r][index[r]].data == date && events[r][index[r]].inicio < start))))
+        {
+            start = events[r][index[r]].inicio;
+            date = events[r][index[r]].data;
+            i = r;
+        }
+    }
+
+    return i;
+}
+
+void pShowAllEvents(Event events[NUM_ROOMS][DIM_ROOMS])
+{
+    int p[NUM_ROOMS] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+    int r;
+
+    for(r = 0; r < NUM_ROOMS; r++)
+    {
+        bubbleSort(events[r], size[r]);
+    }
+
+    r = smallestEventIndex(p, events);
+
+    while(r != -1)
+    { 
+        writeEvent(events[r][p[r]]);
+        p[r]++;
+        r = smallestEventIndex(p, events);
+    }
 }
 
 /*
@@ -483,7 +580,7 @@ int editEvent(char str[DIM_INPUT], int val, Event events[NUM_ROOMS][DIM_ROOMS])
                 break;
             case 4:
                 strcpy(placeholder, token);
-                if(dummy.n_part == 3)
+                if(getParticipants(dummy) == 3)
                 {
                     printf("Impossivel adicionar participante. Evento %s ja tem 3 participantes.\n", dummy.descricao);
 
@@ -497,8 +594,7 @@ int editEvent(char str[DIM_INPUT], int val, Event events[NUM_ROOMS][DIM_ROOMS])
                 }
                 else
                 {
-                    dummy.n_part++;
-                    strcpy(dummy.participantes[dummy.n_part-1], placeholder);
+                    strcpy(dummy.participantes[getParticipants(dummy)], placeholder);
                 }
 
                 break;  
@@ -527,14 +623,13 @@ int editEvent(char str[DIM_INPUT], int val, Event events[NUM_ROOMS][DIM_ROOMS])
         }
         else if (val == 4)
         {
-            if(validPerson(events, dummy, dummy.participantes[dummy.n_part-1]))
+            if(validPerson(events, dummy, dummy.participantes[getParticipants(dummy)-1]))
             {
-                strcpy(events[r-1][i-1].participantes[dummy.n_part-1], dummy.participantes[dummy.n_part-1]);
-                events[r-1][i-1].n_part++;
+                strcpy(events[r-1][i-1].participantes[getParticipants(dummy)-1], dummy.participantes[getParticipants(dummy)-1]);
             }
             else
             {
-                printf("Impossivel adicionar participante. Participante %s tem um evento sobreposto.\n", dummy.participantes[dummy.n_part-1]);
+                printf("Impossivel adicionar participante. Participante %s tem um evento sobreposto.\n", dummy.participantes[getParticipants(dummy)-1]);
             }
         }
     }
@@ -575,14 +670,13 @@ void removeParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
         }
     }
 
-
     if(loop)
     {
         printf("Evento %s inexistente.\n", dummy.descricao);
     }
-    else if (!loop && dummy.n_part > 1)
+    else if (!loop && getParticipants(dummy) > 1)
     {
-        for(c = 0; c < dummy.n_part; c++)
+        for(c = 0; c < getParticipants(dummy); c++)
         {
             if(!strcmp(dummy.participantes[c], placeholder))
             {
@@ -593,21 +687,18 @@ void removeParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
 
         if(changed)
         {
-            while(c+1 < dummy.n_part)
+            while(c+1 < getParticipants(dummy))
             {
                 strcpy(dummy.participantes[c], dummy.participantes[c+1]);
                 c++;
             }
-            strcpy(dummy.participantes[c], "");           
-
-            dummy.n_part-- ;
+            strcpy(dummy.participantes[c], EMPTY);           
 
             events[r-1][i-1] = dummy;
         }
     }
-    else if (dummy.n_part == 1 && !strcmp(placeholder, dummy.participantes[0]))
+    else if (getParticipants(dummy) == 1 && !strcmp(placeholder, dummy.participantes[0]))
     {
-        
         printf("Impossivel remover participante. Participante %s e o unico participante no evento %s.\n", dummy.participantes[0], dummy.descricao);
     }
 }
@@ -616,20 +707,12 @@ int main()
 {    
     Event events[NUM_ROOMS][DIM_ROOMS];
 
-    char op;
     char input[DIM_INPUT];
-
-    int i;
-    char c;
+    char op;
 
     while(1)
     {    
-        for(i = 0; i < DIM_INPUT-1 && (c=getchar()) != '\n' && c != EOF; i++)
-        {   
-            input[i] = c;
-        }
-
-        input[i] = '\0';
+        readString(input);
 
         op = input[0];
 
@@ -642,7 +725,7 @@ int main()
                 addEvent(input, events);
                 break;
             case 'l':
-                showAllEvents(events);
+                pShowAllEvents(events);
                 break;
             case 's':
                 showRoomEvents(atoi(input), events);
