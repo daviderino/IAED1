@@ -213,7 +213,7 @@ int validEvent(Event events[NUM_ROOMS][DIM_ROOMS], Event dummy)
 }
 
 /*
-
+    Usada para determinar se a primeira data e inferior a segunda data
 */
 int smallerDate(int date1, int date2)
 {
@@ -288,6 +288,9 @@ void bubbleSort(Event arr[1000], int lim)
     }
 }
 
+/* 
+    Escreve um dado evento na consola
+*/
 void writeEvent(Event event)
 {
     switch(getParticipants(event))
@@ -328,6 +331,9 @@ void writeEvent(Event event)
     }
 }
 
+/*
+    Remove o primeiro caracter e o espaço inserido em cada input
+*/
 void fixInput(char str[DIM_INPUT])
 {
     int i = 0;
@@ -341,6 +347,27 @@ void fixInput(char str[DIM_INPUT])
     str[i] = '\0';
 }
 
+/*
+    Funcao que determina qual dos 10 eventos se da primeiro
+*/
+int smallestEventIndex(int index[NUM_ROOMS], Event events[NUM_ROOMS][DIM_ROOMS])
+{
+    int date = 0, start = 0;
+    int r, i = -1;
+
+    for(r = 0; r < NUM_ROOMS; r++)
+    {
+        if(index[r] <= size[r] && ((smallerDate(events[r][index[r]].data, date) || (events[r][index[r]].data == date && events[r][index[r]].inicio < start))))
+        {
+            start = events[r][index[r]].inicio;
+            date = events[r][index[r]].data;
+            i = r;
+        }
+    }
+
+    return i;
+}
+
 /*===================================================
 Funcooes Principais
 ===================================================*/
@@ -348,9 +375,9 @@ Funcooes Principais
 /*
     Descricao: Verifica se uma dada pessa esta ocupada num dado intervalo de tempo. ('a')
     Input: str - dados do evento, events - array com a agenda
-    Output: True se adicionar o evento com sucesso, false caso contrario
+    Output: ---
 */
-int addEvent(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
+void addEvent(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
 {
     Event dummy;
 
@@ -375,18 +402,18 @@ int addEvent(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
     }
     
     strcpy(dummy.descricao, placeholder[0]);
-    strcpy(dummy.responsavel, placeholder[5]);
-    strcpy(dummy.participantes[0], placeholder[6]);
-    strcpy(dummy.participantes[1], placeholder[7]);
-    strcpy(dummy.participantes[2], placeholder[8]);
     dummy.data = atoi(placeholder[1]);
     dummy.inicio = atoi(placeholder[2]);
     dummy.duracao = atoi(placeholder[3]);
     dummy.sala = atoi(placeholder[4]);
+    strcpy(dummy.responsavel, placeholder[5]);
+    strcpy(dummy.participantes[0], placeholder[6]);
+    strcpy(dummy.participantes[1], placeholder[7]);
+    strcpy(dummy.participantes[2], placeholder[8]);
 
     if(size[dummy.sala] == 99)
     {
-        return 0;
+        return;
     }
 
     if(validEvent(events, dummy))
@@ -394,32 +421,15 @@ int addEvent(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
         size[dummy.sala-1]++;
 
         events[dummy.sala-1][size[dummy.sala-1]] = dummy;
-
-        return 1;
     }
-
-    return 0;
 }
 
-int smallestEventIndex(int index[NUM_ROOMS], Event events[NUM_ROOMS][DIM_ROOMS])
-{
-    int date = 0, start = 0;
-    int r, i = -1;
-
-    for(r = 0; r < NUM_ROOMS; r++)
-    {
-        if(index[r] <= size[r] && ((smallerDate(events[r][index[r]].data, date) || (events[r][index[r]].data == date && events[r][index[r]].inicio < start))))
-        {
-            start = events[r][index[r]].inicio;
-            date = events[r][index[r]].data;
-            i = r;
-        }
-    }
-
-    return i;
-}
-
-void pShowAllEvents(Event events[NUM_ROOMS][DIM_ROOMS])
+/*
+    Descricao: Escreve na consola todos os eventos por ordem cronologica. ('l')
+    Input: room - numero da sala, events - agenda com os eventos
+    Output: ---
+*/
+void showAllEvents(Event events[NUM_ROOMS][DIM_ROOMS])
 {
     int p[NUM_ROOMS] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
@@ -437,38 +447,6 @@ void pShowAllEvents(Event events[NUM_ROOMS][DIM_ROOMS])
         writeEvent(events[r][p[r]]);
         p[r]++;
         r = smallestEventIndex(p, events);
-    }
-}
-
-/*
-    Descricao: Escreve na consola todos os eventos por ordem cronologica. ('l')
-    Input: room - numero da sala, events - agenda com os eventos
-    Output: ---
-*/
-void showAllEvents(Event events[NUM_ROOMS][DIM_ROOMS])
-{
-    Event output[1000];
-
-    int r, i, j;
-    int lim;
-
-    j = 0;
-
-    for(r = 0; r < NUM_ROOMS; r++)
-    {
-        for(i = 0; i <= size[r]; i++)
-        {
-            output[j] = events[r][i];
-            j++;
-        }
-    }
-
-    lim = j-1;
-    bubbleSort(output, lim);
-
-    for(j = 0; j <= lim; j++)
-    {
-        writeEvent(output[j]);
     }
 }
 
@@ -499,17 +477,14 @@ void deleteEvent(char desc[DIM_VARS], Event events[NUM_ROOMS][DIM_ROOMS])
 {
     int r, i, j;
 
-    int exists = 0;
     int loop = 1;
 
     for(r = 0; r < NUM_ROOMS && loop; r++)
     {
         for(i = 0; i <= size[r] && loop; i++)
         {
-            if(strcmp(events[r][i].descricao, desc) == 0)
+            if(!strcmp(events[r][i].descricao, desc))
             {
-                exists = 1;
-
                 for(j = i; j < size[r]; j++)
                 {
                     events[r][j] = events[r][j+1];
@@ -522,7 +497,7 @@ void deleteEvent(char desc[DIM_VARS], Event events[NUM_ROOMS][DIM_ROOMS])
         }
     }
 
-    if(!exists)
+    if(loop)
     {
         printf("Evento %s inexistente.\n", desc);
     }
@@ -530,17 +505,16 @@ void deleteEvent(char desc[DIM_VARS], Event events[NUM_ROOMS][DIM_ROOMS])
 
 /*
     Descricao: Altera o inicio de um evento na agenda. 
-    Input: str - descricao do evento e valor do novo inicio, events - array com a agenda
+    Input: str - descricao do evento, val - valor a alterar, events - array com a agenda
     Output: ---
 */
-int editEvent(char str[DIM_INPUT], int val, Event events[NUM_ROOMS][DIM_ROOMS])
+void editEvent(char str[DIM_INPUT], int val, Event events[NUM_ROOMS][DIM_ROOMS])
 {
     Event dummy;
     
     int r, i;
     int loop;
 
-    char placeholder[DIM_VARS];
     char *token;
     
     token = strtok(str, DELIM);
@@ -561,11 +535,7 @@ int editEvent(char str[DIM_INPUT], int val, Event events[NUM_ROOMS][DIM_ROOMS])
         }
     }
 
-    if(loop)
-    {
-        printf("Evento %s inexistente.\n", dummy.descricao);
-    }
-    else
+    if(!loop)
     {
         switch(val)
         {
@@ -578,26 +548,6 @@ int editEvent(char str[DIM_INPUT], int val, Event events[NUM_ROOMS][DIM_ROOMS])
             case 3:
                 dummy.sala = atoi(token);
                 break;
-            case 4:
-                strcpy(placeholder, token);
-                if(getParticipants(dummy) == 3)
-                {
-                    printf("Impossivel adicionar participante. Evento %s ja tem 3 participantes.\n", dummy.descricao);
-
-                    return 0;
-                }
-                else if ((!strcmp(dummy.participantes[0], placeholder) 
-                        || !strcmp(dummy.participantes[1], placeholder) 
-                        || !strcmp(dummy.participantes[2], placeholder)))
-                {
-                    return 0;
-                }
-                else
-                {
-                    strcpy(dummy.participantes[getParticipants(dummy)], placeholder);
-                }
-
-                break;  
         }
 
         if(val <= 3 && validEvent(events, dummy))
@@ -621,22 +571,75 @@ int editEvent(char str[DIM_INPUT], int val, Event events[NUM_ROOMS][DIM_ROOMS])
                     break;
             }
         }
-        else if (val == 4)
+    }
+    else
+    {
+        printf("Evento %s inexistente.\n", dummy.descricao);
+    }
+}
+
+/*
+    Adiciona um dado participante a um dado evento.
+*/
+void addParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
+{
+    Event dummy;
+
+    int r, i;
+    int loop = 1;
+
+    char *token;
+
+    char part[DIM_VARS];
+
+    token = strtok(str, DELIM);
+    strcpy(dummy.descricao, token);
+    token = strtok(NULL, DELIM);
+    strcpy(part, token);
+
+    for(r = 0; r < NUM_ROOMS && loop; r++)
+    {
+        for(i = 0; i <= size[r] && loop; i++)
         {
-            if(validPerson(events, dummy, dummy.participantes[getParticipants(dummy)-1]))
+            if(!strcmp(dummy.descricao, events[r][i].descricao))
             {
-                strcpy(events[r-1][i-1].participantes[getParticipants(dummy)-1], dummy.participantes[getParticipants(dummy)-1]);
-            }
-            else
-            {
-                printf("Impossivel adicionar participante. Participante %s tem um evento sobreposto.\n", dummy.participantes[getParticipants(dummy)-1]);
+                if(getParticipants(events[r][i]) == 3)
+                {
+                    printf("Impossivel adicionar participante. Evento %s ja tem 3 participantes.\n", dummy.descricao);
+                    return;
+                }
+
+                dummy = events[r][i];
+
+                if(!strcmp(dummy.participantes[0], part) || !strcmp(dummy.participantes[1], part) || !strcmp(dummy.participantes[2], part))
+                {
+                    return;
+                }
+
+                strcpy(dummy.participantes[getParticipants(dummy)], part);
+                loop = 0;
+
+                if(validPerson(events, dummy, part))
+                {
+                    events[r][i] = dummy;
+                }  
+                else
+                {
+                    printf("Impossivel adicionar participante. Participante %s tem um evento sobreposto.\n", dummy.participantes[getParticipants(dummy)-1]);
+                }                              
             }
         }
     }
 
-    return 1;
+    if(loop)
+    {
+        printf("Evento %s inexistente.\n", dummy.descricao);
+    }    
 }
 
+/*
+    Caso possivel, remove um dado participante de um evento
+*/
 void removeParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
 {
     Event dummy;
@@ -659,7 +662,6 @@ void removeParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
 
     for(r = 0; r < NUM_ROOMS && loop; r++)
     {
-
         for(i = 0; i <= size[r] && loop; i++)
         {
             if(!strcmp(events[r][i].descricao, dummy.descricao))
@@ -725,7 +727,7 @@ int main()
                 addEvent(input, events);
                 break;
             case 'l':
-                pShowAllEvents(events);
+                showAllEvents(events);
                 break;
             case 's':
                 showRoomEvents(atoi(input), events);
@@ -743,7 +745,7 @@ int main()
                 editEvent(input, 3, events);
                 break;
             case 'A':
-                editEvent(input, 4, events);
+                addParticipant(input, events);
                 break;
             case 'R':
                 removeParticipant(input, events);
