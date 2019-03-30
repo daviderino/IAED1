@@ -411,7 +411,7 @@ void addEvent(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
     strcpy(dummy.participantes[1], placeholder[7]);
     strcpy(dummy.participantes[2], placeholder[8]);
 
-    if(size[dummy.sala] == 99)
+    if(size[dummy.sala-1] == 99)
     {
         return;
     }
@@ -705,6 +705,9 @@ void removeParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
     }
 }
 
+/*===================================================
+Main
+===================================================*/
 int main()
 {    
     Event events[NUM_ROOMS][DIM_ROOMS];
