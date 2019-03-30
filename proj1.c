@@ -49,6 +49,13 @@ Variaveis globais
     O valor -1 significa que a sala esta vazia */
 int size[10] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 
+/*===================================================
+Funcooes Auxiliares
+===================================================*/
+
+/*
+    Funcao que determina o numero de participantes de um evento
+*/
 int getParticipants(Event event)
 {
     int i;
@@ -64,6 +71,9 @@ int getParticipants(Event event)
     return i;
 }
 
+/*
+    Funcao que le o input do utilizador
+*/
 void readString(char dest[DIM_VARS])
 {
     int i;
@@ -76,10 +86,6 @@ void readString(char dest[DIM_VARS])
 
     dest[i] = '\0';
 }
-
-/*===================================================
-Funcooes Auxiliares
-===================================================*/
 
 /*
     Descricao: Adiciona a uma variavel que contem tempo, um dado valor
@@ -159,10 +165,10 @@ int validPerson(Event events[NUM_ROOMS][DIM_ROOMS], Event dummy, char pessoa[DIM
         for(j = 0; j <= size[i]; j++)
         {
             if(events[i][j].data == dummy.data && strcmp(events[i][j].descricao, dummy.descricao)
-                && ((strcmp(events[i][j].responsavel, pessoa) == 0)
-                || (strcmp(events[i][j].participantes[0], pessoa) == 0) 
-                || (strcmp(events[i][j].participantes[1], pessoa) == 0) 
-                || (strcmp(events[i][j].participantes[2], pessoa) == 0)))
+                && ((!strcmp(events[i][j].responsavel, pessoa))
+                || (!strcmp(events[i][j].participantes[0], pessoa)) 
+                || (!strcmp(events[i][j].participantes[1], pessoa)) 
+                || (!strcmp(events[i][j].participantes[2], pessoa))))
             {   
                 if(!validTime(events[i][j].inicio, addTime(events[i][j].inicio, events[i][j].duracao), dummy.inicio, addTime(dummy.inicio, dummy.duracao)))
                 {
@@ -236,15 +242,15 @@ int smallerDate(int date1, int date2)
     day1 = date1;
     day2 = date2;
     
-    if(year1 > year2)
+    if(year1 < year2)
     {
         return 1;
     }
-    else if(year1 == year2 && (month1 > month2))
+    else if(year1 == year2 && (month1 < month2))
     {
         return 1;
     }
-    else if(year1 == year2 && month1 == month2 && (day1 > day2))
+    else if(year1 == year2 && month1 == month2 && (day1 < day2))
     {
         return 1;
     }
@@ -272,7 +278,7 @@ void bubbleSort(Event arr[1000], int lim)
             a = arr[j].data;
             b = arr[j+1].data;
 
-            if((smallerDate(a, b)) || (a == b && arr[j].inicio > arr[j+1].inicio))
+            if((a == b && arr[j].inicio > arr[j+1].inicio) || (a != b && !smallerDate(a, b)))
             {
                 dummy = arr[j];
                 arr[j] = arr[j+1];
@@ -352,7 +358,7 @@ void fixInput(char str[DIM_INPUT])
 */
 int smallestEventIndex(int index[NUM_ROOMS], Event events[NUM_ROOMS][DIM_ROOMS])
 {
-    int date = 0, start = 0;
+    int date = 99999999, start = 9999;
     int r, i = -1;
 
     for(r = 0; r < NUM_ROOMS; r++)
@@ -361,6 +367,7 @@ int smallestEventIndex(int index[NUM_ROOMS], Event events[NUM_ROOMS][DIM_ROOMS])
         {
             start = events[r][index[r]].inicio;
             date = events[r][index[r]].data;
+
             i = r;
         }
     }
@@ -369,11 +376,11 @@ int smallestEventIndex(int index[NUM_ROOMS], Event events[NUM_ROOMS][DIM_ROOMS])
 }
 
 /*===================================================
-Funcooes Principais
+Funcoes Principais
 ===================================================*/
 
 /*
-    Descricao: Verifica se uma dada pessa esta ocupada num dado intervalo de tempo. ('a')
+    Descricao: Adiciona um evento a agenda, efetuando verificacao dos valores a inserir. Corresponde ao comando 'a'
     Input: str - dados do evento, events - array com a agenda
     Output: ---
 */
@@ -392,6 +399,7 @@ void addEvent(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
 
     token = strtok(str, DELIM);
    
+	/* Passagem de todos os valores de input para um placeholder */
     while(token != NULL) 
     {
         strcpy(placeholder[index], token);
@@ -411,12 +419,8 @@ void addEvent(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
     strcpy(dummy.participantes[1], placeholder[7]);
     strcpy(dummy.participantes[2], placeholder[8]);
 
-    if(size[dummy.sala-1] == 99)
-    {
-        return;
-    }
-
-    if(validEvent(events, dummy))
+    /* Adiciona o evento a lista de eventos caso haja espaco seja um evento valido, isto e, nao haja conflito para com outros eventos */ 
+    if(size[dummy.sala-1] != 99 && validEvent(events, dummy))
     {
         size[dummy.sala-1]++;
 
@@ -426,7 +430,7 @@ void addEvent(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
 
 /*
     Descricao: Escreve na consola todos os eventos por ordem cronologica. ('l')
-    Input: room - numero da sala, events - agenda com os eventos
+    Input: events - agenda com os eventos
     Output: ---
 */
 void showAllEvents(Event events[NUM_ROOMS][DIM_ROOMS])
@@ -470,7 +474,7 @@ void showRoomEvents(int room, Event events[NUM_ROOMS][DIM_ROOMS])
 
 /*
     Descricao: Remove um dado evento da agenda. ('r')
-    Input: str - descricao do evento, events - array com a agenda
+    Input: desc - descricao do evento, events - array com a agenda
     Output: ---
 */
 void deleteEvent(char desc[DIM_VARS], Event events[NUM_ROOMS][DIM_ROOMS])
@@ -504,11 +508,11 @@ void deleteEvent(char desc[DIM_VARS], Event events[NUM_ROOMS][DIM_ROOMS])
 }
 
 /*
-    Descricao: Altera o inicio de um evento na agenda. 
-    Input: str - descricao do evento, val - valor a alterar, events - array com a agenda
+    Descricao: Altera um valor de um dado evento.
+    Input: str - descricao do evento, sel - seletor do valor a alterar, events - array com a agenda
     Output: ---
 */
-void editEvent(char str[DIM_INPUT], int val, Event events[NUM_ROOMS][DIM_ROOMS])
+void editEvent(char str[DIM_INPUT], int sel, Event events[NUM_ROOMS][DIM_ROOMS])
 {
     Event dummy;
     
@@ -531,13 +535,13 @@ void editEvent(char str[DIM_INPUT], int val, Event events[NUM_ROOMS][DIM_ROOMS])
             {
                 dummy = events[r][i];
                 loop = 0;
-            }  
+            }
         }
     }
 
     if(!loop)
     {
-        switch(val)
+        switch(sel)
         {
             case 1:
                 dummy.inicio = atoi(token);
@@ -547,30 +551,40 @@ void editEvent(char str[DIM_INPUT], int val, Event events[NUM_ROOMS][DIM_ROOMS])
                 break;
             case 3:
                 dummy.sala = atoi(token);
+
+				if(size[dummy.sala-1] == 99)
+				{
+					return;
+				}
+				
                 break;
         }
 
-        if(val <= 3 && validEvent(events, dummy))
+        if(sel <= 2 && validEvent(events, dummy))
         {
-            switch(val)
+            switch(sel)
             {
                 case 1:
                     events[r-1][i-1].inicio = dummy.inicio;
-
                     break;
                 case 2:
                     events[r-1][i-1].duracao = dummy.duracao;
-
-                    break;
-                case 3:
-                    deleteEvent(dummy.descricao, events);
-                    
-                    size[dummy.sala-1]++;
-                    events[dummy.sala-1][size[dummy.sala-1]] = dummy;
-
                     break;
             }
         }
+		else if (sel == 3)
+		{
+			if(validRoom(events, dummy))
+			{
+ 				deleteEvent(dummy.descricao, events);        
+            	size[dummy.sala-1]++;
+            	events[dummy.sala-1][size[dummy.sala-1]] = dummy;
+			}
+			else
+			{
+				printf("Impossivel agendar evento %s. Sala%d ocupada.\n", dummy.descricao, dummy.sala);
+			}
+		}
     }
     else
     {
@@ -603,16 +617,16 @@ void addParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
         {
             if(!strcmp(dummy.descricao, events[r][i].descricao))
             {
-                if(getParticipants(events[r][i]) == 3)
-                {
-                    printf("Impossivel adicionar participante. Evento %s ja tem 3 participantes.\n", dummy.descricao);
-                    return;
-                }
-
                 dummy = events[r][i];
 
                 if(!strcmp(dummy.participantes[0], part) || !strcmp(dummy.participantes[1], part) || !strcmp(dummy.participantes[2], part))
                 {
+                    return;
+                }
+
+	            if(getParticipants(dummy) == 3)
+                {
+                    printf("Impossivel adicionar participante. Evento %s ja tem 3 participantes.\n", dummy.descricao);
                     return;
                 }
 
@@ -668,6 +682,15 @@ void removeParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
             {
                 dummy = events[r][i];
                 loop = 0;
+
+                if(getParticipants(dummy) == 1)
+                {
+					if(!strcmp(dummy.participantes[0], placeholder))
+					{
+                    	printf("Impossivel remover participante. Participante %s e o unico participante no evento %s.\n", dummy.participantes[0], dummy.descricao);
+					}
+                    return;
+                }
             }
         }
     }
@@ -676,7 +699,7 @@ void removeParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
     {
         printf("Evento %s inexistente.\n", dummy.descricao);
     }
-    else if (!loop && getParticipants(dummy) > 1)
+    else
     {
         for(c = 0; c < getParticipants(dummy); c++)
         {
@@ -698,10 +721,6 @@ void removeParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
 
             events[r-1][i-1] = dummy;
         }
-    }
-    else if (getParticipants(dummy) == 1 && !strcmp(placeholder, dummy.participantes[0]))
-    {
-        printf("Impossivel remover participante. Participante %s e o unico participante no evento %s.\n", dummy.participantes[0], dummy.descricao);
     }
 }
 
