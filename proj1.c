@@ -5,12 +5,11 @@
 */
 
 /*===================================================
-Bibliotecas e ficheiros
+Bibliotecas
 ===================================================*/
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <math.h>
 
 /*===================================================
 Constantes
@@ -18,28 +17,38 @@ Constantes
 #define DIM_INPUT 350       /* Valor maximo de caracteres que pode ser inserido */
 #define DIM_VARS 64         /* Dimensao maxima que uma string com dados pode ter*/
 #define DIM_PLACEHOLDER 8   /* Dimensao do array usado para separar dados recebidos */
-#define DIM_ROOMS 100       /* Numero maximo de eventos por quarto */
+
+#define DIM_ROOMS 100       /* Numero maximo de eventos por sala */
+#define NUM_ROOMS 10        /* Numero maximo de salas */
 
 #define NUM_PARTICIPANTS 3  /* Valor maximo de participantes por evento */
-#define NUM_ROOMS 10        /* Numero maximo de quartos */
 
-#define DELIM ":"           /* Caracter usado para delimitar os dados */
-#define EMPTY ""
+#define DELIM ":"           /* Caracter usado para delimitar o input */
+#define EMPTY ""            /* Espaco vazio */
 
 /*===================================================
 Estruturas
 ===================================================*/
 
-/* Estrutura evento, usada para representar um dado evento */
+/* 
+Estrutura evento, usada para representar um dado evento 
+    Descricao: 
+    Data: 
+    Inicio: 
+    Duracao: 
+    Sala: 
+    Responsavel: 
+    Participantes:
+*/
 typedef struct event
 {
-    char descricao[DIM_VARS];
-    int data;
-    int inicio; 
-    int duracao;
-    int sala; 
-    char responsavel[DIM_VARS]; 
-    char participantes[NUM_PARTICIPANTS][DIM_VARS];
+    char descricao[DIM_VARS];                       /* string com a descricao do evento */
+    int data;                                       /* Data do evento */
+    int inicio;                                     /* Hora de inicio do evento */
+    int duracao;                                    /* Duracao em minutos, do evento */
+    int sala;                                       /* Valor entre 1 a 10 correspondente a sala */
+    char responsavel[DIM_VARS];                     /* Pessoa responsavel pelo evento*/
+    char participantes[NUM_PARTICIPANTS][DIM_VARS]; /* Nmes dos participantes. A string vazia corresponde a nao haver participante */
 }Event;
 
 /*===================================================
@@ -50,11 +59,13 @@ Variaveis globais
 int size[10] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 
 /*===================================================
-Funcooes Auxiliares
+Funcoes Auxiliares - Manipulacao de dados
 ===================================================*/
 
 /*
-    Funcao que determina o numero de participantes de um evento
+    Descricao: Calcula o numero de participantes de um evento
+    Input: event - evento a determinar o numero de participantes
+    Output: numero de participantes
 */
 int getParticipants(Event event)
 {
@@ -72,25 +83,53 @@ int getParticipants(Event event)
 }
 
 /*
-    Funcao que le o input do utilizador
+    Descricao: Determina qual das datas e menor
+    Input: datas a comprarar
+    Output: true se a primeira data for menor que a segunda, false caso contrario
 */
-void readString(char dest[DIM_VARS])
+int smallerDate(int date1, int date2)
 {
-    int i;
-    char c;
-     
-    for(i = 0; i < DIM_INPUT-1 && (c=getchar()) != '\n' && c != EOF; i++)
-    {   
-        dest[i] = c;
-    }
+    int year1, year2;
+    int month1, month2;
+    int day1, day2;
 
-    dest[i] = '\0';
+    year1 = date1%10000;
+    year2 = date2%10000;
+
+    date1 = date1 / 10000;
+    date2 = date2 / 10000;
+
+    month1 = date1%100;
+    month2 = date2%100;
+
+    date1 = date1 / 100;
+    date2 = date2 / 100;
+
+    day1 = date1;
+    day2 = date2;
+    
+    if(year1 < year2)
+    {
+        return 1;
+    }
+    else if(year1 == year2 && (month1 < month2))
+    {
+        return 1;
+    }
+    else if(year1 == year2 && month1 == month2 && (day1 < day2))
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 /*
     Descricao: Adiciona a uma variavel que contem tempo, um dado valor
     Input: temp- o tempo no formato hhmm, val- valor a somar
-    Output:  tempo com o valor adicionado
+    Output: tempo com o valor adicionado
 */
 int addTime(int temp, int val)
 {
@@ -107,6 +146,138 @@ int addTime(int temp, int val)
 
     return horas + mins;
 }
+
+/*
+    Descricao: Determina o indice da sala com o evento a comecar primeiro.
+    Input: index - array com os indices dos ultimos eventos acedidos, events - agenda dos eventos
+    Output: indice do evento que comeca primeiro
+*/
+int smallestEventIndex(int index[NUM_ROOMS], Event events[NUM_ROOMS][DIM_ROOMS])
+{
+    int date = 99999999, start = 9999;
+    int r, i = -1;
+
+    for(r = 0; r < NUM_ROOMS; r++)
+    {
+        if(index[r] <= size[r] && ((smallerDate(events[r][index[r]].data, date) || (events[r][index[r]].data == date && events[r][index[r]].inicio < start))))
+        {
+            start = events[r][index[r]].inicio;
+            date = events[r][index[r]].data;
+
+            i = r;
+        }
+    }
+
+    return i;
+}
+
+/*
+    Descricao: Ordena um dado array (sala) de eventos
+    Input: arr - eventos, lim - tamanho do array
+    Output: ---
+*/
+void bubbleSort(Event arr[100], int lim)
+{
+    Event dummy;
+
+    int i, j;
+    int a, b;
+    int swapped = 0;
+
+    for(i = 0; i < lim; i++)
+    {
+        for(j = 0; j+1 <= lim; j++)
+        {
+            a = arr[j].data;
+            b = arr[j+1].data;
+
+            if((a == b && arr[j].inicio > arr[j+1].inicio) || (a != b && !smallerDate(a, b)))
+            {
+                dummy = arr[j];
+                arr[j] = arr[j+1];
+                arr[j+1] = dummy;
+                swapped = 1;
+            }
+        }
+
+        if(swapped == 0)
+        {
+            break;
+        }
+    }
+}
+
+/*===================================================
+Funcoes Auxiliares - Input/Output
+===================================================*/
+
+/*
+    Descricao: Le o input do utilizador para a string de destino
+    Input: dest- string a armazenar o valor
+    Output: --
+*/
+void readString(char dest[DIM_VARS])
+{
+    int i;
+    char c;
+     
+    for(i = 0; i < DIM_INPUT-1 && (c=getchar()) != '\n' && c != EOF; i++)
+    {   
+        dest[i] = c;
+    }
+
+    dest[i] = '\0';
+}
+
+/*
+    Descricao: Escreve um dado evento no terminal
+    Input: event- evento a escrever
+    Output: string escrita no terminal
+*/
+void writeEvent(Event event)
+{
+    printf("%s %08d %04d %d Sala%d %s\n* %s",
+                event.descricao,
+                event.data,
+                event.inicio,
+                event.duracao,
+                event.sala,
+                event.responsavel,
+                event.participantes[0]);
+    switch(getParticipants(event))
+    {
+        case 2:
+            printf(" %s", event.participantes[1]);
+            break;
+        case 3:
+            printf(" %s %s", event.participantes[1], event.participantes[2]);
+            break;
+    }
+
+    printf("\n");
+}
+
+/*
+    Descricao: Remove o primeiro caracter de uma string
+    Input: str - string de input
+    Output: ---
+*/
+void fixInput(char str[DIM_INPUT])
+{
+    int i = 0;
+
+    while(str[i+1] != '\0')
+    {
+        str[i] = str[i+1];
+        i++;
+    }
+
+    str[i] = '\0';
+}
+
+/*===================================================
+Funcoes Auxiliares - Validacao de dados
+===================================================*/
 
 /*
     Desricao: Verifica se os valores correspondentes a 2 eventos nao entram em conflito
@@ -152,8 +323,8 @@ int validRoom(Event events[NUM_ROOMS][DIM_ROOMS], Event dummy)
 }
 
 /*
-    Descricao: Verifica se uma dada pessa esta ocupada num dado intervalo de tempo
-    Input: events - agenda dos eventos; pessoa - pessoa a validar
+    Descricao: Verifica se uma dada pessoa esta ocupada num dado intervalo de tempo
+    Input: events - agenda dos eventos; dummy - evento avalidar; pessoa - pessoa a validar
     Output: True se for valido, false caso contrario
 */
 int validPerson(Event events[NUM_ROOMS][DIM_ROOMS], Event dummy, char pessoa[DIM_VARS])
@@ -218,169 +389,12 @@ int validEvent(Event events[NUM_ROOMS][DIM_ROOMS], Event dummy)
     return valid;
 }
 
-/*
-    Usada para determinar se a primeira data e inferior a segunda data
-*/
-int smallerDate(int date1, int date2)
-{
-    int year1, year2;
-    int month1, month2;
-    int day1, day2;
-
-    year1 = date1%10000;
-    year2 = date2%10000;
-
-    date1 = date1 / 10000;
-    date2 = date2 / 10000;
-
-    month1 = date1%100;
-    month2 = date2%100;
-
-    date1 = date1 / 100;
-    date2 = date2 / 100;
-
-    day1 = date1;
-    day2 = date2;
-    
-    if(year1 < year2)
-    {
-        return 1;
-    }
-    else if(year1 == year2 && (month1 < month2))
-    {
-        return 1;
-    }
-    else if(year1 == year2 && month1 == month2 && (day1 < day2))
-    {
-        return 1;
-    }
-    else
-    {
-        return 0;
-    }
-}
-
-/*
-    Ordena um dado array de eventos. Limite corresponde ao numero de eventos
-*/
-void bubbleSort(Event arr[1000], int lim)
-{
-    Event dummy;
-
-    int i, j;
-    int a, b;
-    int swapped = 0;
-
-    for(i = 0; i < lim; i++)
-    {
-        for(j = 0; j+1 <= lim; j++)
-        {
-            a = arr[j].data;
-            b = arr[j+1].data;
-
-            if((a == b && arr[j].inicio > arr[j+1].inicio) || (a != b && !smallerDate(a, b)))
-            {
-                dummy = arr[j];
-                arr[j] = arr[j+1];
-                arr[j+1] = dummy;
-                swapped = 1;
-            }
-        }
-
-        if(swapped == 0)
-        {
-            break;
-        }
-    }
-}
-
-/* 
-    Escreve um dado evento na consola
-*/
-void writeEvent(Event event)
-{
-    switch(getParticipants(event))
-    {
-        case 1:
-            printf("%s %08d %04d %d Sala%d %s\n* %s\n",
-                event.descricao,
-                event.data,
-                event.inicio,
-                event.duracao,
-                event.sala,
-                event.responsavel,
-                event.participantes[0]);
-            break;
-        case 2:
-            printf("%s %08d %04d %d Sala%d %s\n* %s %s\n",
-                event.descricao,
-                event.data,
-                event.inicio,
-                event.duracao,
-                event.sala,
-                event.responsavel,
-                event.participantes[0],                
-                event.participantes[1]);
-            break;
-        case 3:
-            printf("%s %08d %04d %d Sala%d %s\n* %s %s %s\n",
-                    event.descricao,
-                    event.data,
-                    event.inicio,
-                    event.duracao,
-                    event.sala,
-                    event.responsavel,
-                    event.participantes[0],
-                    event.participantes[1],
-                    event.participantes[2]);
-            break;
-    }
-}
-
-/*
-    Remove o primeiro caracter e o espaço inserido em cada input
-*/
-void fixInput(char str[DIM_INPUT])
-{
-    int i = 0;
-
-    while(str[i+1] != '\0')
-    {
-        str[i] = str[i+1];
-        i++;
-    }
-
-    str[i] = '\0';
-}
-
-/*
-    Funcao que determina qual dos 10 eventos se da primeiro
-*/
-int smallestEventIndex(int index[NUM_ROOMS], Event events[NUM_ROOMS][DIM_ROOMS])
-{
-    int date = 99999999, start = 9999;
-    int r, i = -1;
-
-    for(r = 0; r < NUM_ROOMS; r++)
-    {
-        if(index[r] <= size[r] && ((smallerDate(events[r][index[r]].data, date) || (events[r][index[r]].data == date && events[r][index[r]].inicio < start))))
-        {
-            start = events[r][index[r]].inicio;
-            date = events[r][index[r]].data;
-
-            i = r;
-        }
-    }
-
-    return i;
-}
-
 /*===================================================
 Funcoes Principais
 ===================================================*/
 
 /*
-    Descricao: Adiciona um evento a agenda, efetuando verificacao dos valores a inserir. Corresponde ao comando 'a'
+    Descricao: Adiciona um evento a agenda, efetuando verificacao dos valores a inserir. ('a')
     Input: str - dados do evento, events - array com a agenda
     Output: ---
 */
@@ -393,9 +407,9 @@ void addEvent(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
 
     int index = 0;
 
-    strcpy(placeholder[6], "");
-    strcpy(placeholder[7], "");
-    strcpy(placeholder[8], "");
+    strcpy(placeholder[6], EMPTY);
+    strcpy(placeholder[7], EMPTY);
+    strcpy(placeholder[8], EMPTY);
 
     token = strtok(str, DELIM);
    
@@ -508,7 +522,7 @@ void deleteEvent(char desc[DIM_VARS], Event events[NUM_ROOMS][DIM_ROOMS])
 }
 
 /*
-    Descricao: Altera um valor de um dado evento.
+    Descricao: Altera um valor de um dado evento. (1:'i', 2:'t', 3:'m')
     Input: str - descricao do evento, sel - seletor do valor a alterar, events - array com a agenda
     Output: ---
 */
@@ -593,7 +607,9 @@ void editEvent(char str[DIM_INPUT], int sel, Event events[NUM_ROOMS][DIM_ROOMS])
 }
 
 /*
-    Adiciona um dado participante a um dado evento.
+    Descricao: Adiciona um participante a um dado evento. ('A')
+    Input: str - nome do participante, events - array com a agenda
+    Output: ---
 */
 void addParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
 {
@@ -652,7 +668,9 @@ void addParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
 }
 
 /*
-    Caso possivel, remove um dado participante de um evento
+    Descricao: Remove um dado participante de um evento. ('R')
+    Input: str - nome do participante, events - array com a agenda
+    Output: ---
 */
 void removeParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
 {
@@ -687,7 +705,9 @@ void removeParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
                 {
 					if(!strcmp(dummy.participantes[0], placeholder))
 					{
-                    	printf("Impossivel remover participante. Participante %s e o unico participante no evento %s.\n", dummy.participantes[0], dummy.descricao);
+                    	printf("Impossivel remover participante. Participante %s e o unico participante no evento %s.\n",
+                            dummy.participantes[0],
+                            dummy.descricao);
 					}
                     return;
                 }
