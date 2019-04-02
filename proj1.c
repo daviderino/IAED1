@@ -135,10 +135,12 @@ int addTime(int temp, int val)
 {
     int horas, mins;
 
+    /* Converte o tempo para minutos, soma e obtem as horas de novo*/
     mins = (temp % 100) + ((temp/100) * 60);
     mins += val;
     horas = (mins/60)*100;
 
+    /* Obtem os novos valores dos minutos*/
     while(mins >= 60)
     {
         mins -= 60;
@@ -157,6 +159,7 @@ int smallestEventIndex(int index[NUM_ROOMS], Event events[NUM_ROOMS][DIM_ROOMS])
     int date = 99999999, start = 9999;
     int r, i = -1;
 
+    /* Percorre o ultimo evento selecionado de cada quarto e verifica qual e o minimo */
     for(r = 0; r < NUM_ROOMS; r++)
     {
         if(index[r] <= size[r] && ((smallerDate(events[r][index[r]].data, date) || (events[r][index[r]].data == date && events[r][index[r]].inicio < start))))
@@ -191,6 +194,8 @@ void bubbleSort(Event arr[100], int lim)
             a = arr[j].data;
             b = arr[j+1].data;
 
+            /* Verifica 2 casos: caso as datas sejam iguais, verifica qual a menor hora de inicio, 
+            caso as datas sejam diferentes verifica se a primeira e inferior a primeira*/
             if((a == b && arr[j].inicio > arr[j+1].inicio) || (a != b && !smallerDate(a, b)))
             {
                 dummy = arr[j];
@@ -200,6 +205,7 @@ void bubbleSort(Event arr[100], int lim)
             }
         }
 
+        /* Condicao de paragem caso nao esteja ordenado z*/
         if(swapped == 0)
         {
             break;
@@ -244,6 +250,8 @@ void writeEvent(Event event)
                 event.sala,
                 event.responsavel,
                 event.participantes[0]);
+
+    /* Consoante o numero de participantes, da os prints restantes */
     switch(getParticipants(event))
     {
         case 2:
@@ -266,6 +274,7 @@ void fixInput(char str[DIM_INPUT])
 {
     int i = 0;
 
+    /* Percorre a string toda e da um "shift" left de todos os caracteres*/
     while(str[i+1] != '\0')
     {
         str[i] = str[i+1];
@@ -308,10 +317,12 @@ int validRoom(Event events[NUM_ROOMS][DIM_ROOMS], Event dummy)
     int i;
     int r = dummy.sala-1;
 
+    /* Percorre todos os eventos de uma dada sala e verifica se ha conflitos de disponibilidade */
     for(i = 0; i <= size[r]; i++)   
     {
         if(events[r][i].data == dummy.data && strcmp(events[r][i].descricao, dummy.descricao))
         {
+            /* Caso a sala esteja ocupada, sai da funcao imediatamente*/
             if(!validTime(events[r][i].inicio, addTime(events[r][i].inicio, events[r][i].duracao) , dummy.inicio, addTime(dummy.inicio, dummy.duracao)))
             {
                 return 0;
@@ -331,10 +342,12 @@ int validPerson(Event events[NUM_ROOMS][DIM_ROOMS], Event dummy, char pessoa[DIM
 {
     int i, j;
 
+    /* Percorre todas as salas e todos os eventos*/
     for(i = 0; i < NUM_ROOMS; i++)
     {
         for(j = 0; j <= size[i]; j++)
         {
+            /* Verifica se qualquer uma das pessoas do evento nao coincide com a pessoa de input */
             if(events[i][j].data == dummy.data && strcmp(events[i][j].descricao, dummy.descricao)
                 && ((!strcmp(events[i][j].responsavel, pessoa))
                 || (!strcmp(events[i][j].participantes[0], pessoa)) 
@@ -377,6 +390,7 @@ int validEvent(Event events[NUM_ROOMS][DIM_ROOMS], Event dummy)
         valid = 0;
     }
 
+    /* Verifica a disponibilidade de cada participante */
     for(i = 0; i < getParticipants(dummy); i++)
     { 
         if(!validPerson(events, dummy, dummy.participantes[i]))
@@ -453,6 +467,7 @@ void showAllEvents(Event events[NUM_ROOMS][DIM_ROOMS])
 
     int r;
 
+    /* Ordena todas as salas */
     for(r = 0; r < NUM_ROOMS; r++)
     {
         bubbleSort(events[r], size[r]);
@@ -460,6 +475,7 @@ void showAllEvents(Event events[NUM_ROOMS][DIM_ROOMS])
 
     r = smallestEventIndex(p, events);
 
+    /* Verifica qual o indice do evento a comecar primeiro e efetua print, repetidamente ate chegar ao fim*/
     while(r != -1)
     { 
         writeEvent(events[r][p[r]]);
@@ -480,6 +496,7 @@ void showRoomEvents(int room, Event events[NUM_ROOMS][DIM_ROOMS])
 
     bubbleSort(events[r], size[r]);
 
+    /* Percorre todos os eventos da sala e da print dos mesmos*/
     for(i = 0; i <= size[r]; i++)
     {
         writeEvent(events[r][i]);
@@ -497,12 +514,14 @@ void deleteEvent(char desc[DIM_VARS], Event events[NUM_ROOMS][DIM_ROOMS])
 
     int loop = 1;
 
+    /* Percorre todos os eventos ate encontrar o evento a apagar */
     for(r = 0; r < NUM_ROOMS && loop; r++)
     {
         for(i = 0; i <= size[r] && loop; i++)
         {
             if(!strcmp(events[r][i].descricao, desc))
             {
+                /* Da um "shift left" de todos os eventos a frente do que foi apagado */
                 for(j = i; j < size[r]; j++)
                 {
                     events[r][j] = events[r][j+1];
@@ -541,6 +560,7 @@ void editEvent(char str[DIM_INPUT], int sel, Event events[NUM_ROOMS][DIM_ROOMS])
 
     loop = 1;
 
+    /* Percorre todos os eventos ate encontrar o evento a alterar e coloca lo numa variavel temporaria*/
     for(r = 0; r < NUM_ROOMS && loop; r++)
     {
         for(i = 0; i <= size[r] && loop; i++)
@@ -555,6 +575,7 @@ void editEvent(char str[DIM_INPUT], int sel, Event events[NUM_ROOMS][DIM_ROOMS])
 
     if(!loop)
     {
+        /* Altera o respetivo valor na variavel temporaria */
         switch(sel)
         {
             case 1:
@@ -574,6 +595,7 @@ void editEvent(char str[DIM_INPUT], int sel, Event events[NUM_ROOMS][DIM_ROOMS])
                 break;
         }
 
+        /* Caso tenha sido alterado o inicio ou a duracao, altera na agenda */
         if(sel <= 2 && validEvent(events, dummy))
         {
             switch(sel)
@@ -586,6 +608,7 @@ void editEvent(char str[DIM_INPUT], int sel, Event events[NUM_ROOMS][DIM_ROOMS])
                     break;
             }
         }
+        /* Se alterou a sala, altera os indices na agenda e altera a variavel global*/
 		else if (sel == 3)
 		{
 			if(validRoom(events, dummy))
@@ -622,6 +645,7 @@ void addParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
 
     char part[DIM_VARS];
 
+    /* Coloca os valores para efetuar a procura numa variavel temporaria*/
     token = strtok(str, DELIM);
     strcpy(dummy.descricao, token);
     token = strtok(NULL, DELIM);
@@ -635,11 +659,13 @@ void addParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
             {
                 dummy = events[r][i];
 
+                /* Verifica se o participante a adicionar ja esta no evento, e acaba a funcao*/
                 if(!strcmp(dummy.participantes[0], part) || !strcmp(dummy.participantes[1], part) || !strcmp(dummy.participantes[2], part))
                 {
                     return;
                 }
 
+                /* Verifica o numero de participantes no evento*/
 	            if(getParticipants(dummy) == 3)
                 {
                     printf("Impossivel adicionar participante. Evento %s ja tem 3 participantes.\n", dummy.descricao);
@@ -649,6 +675,7 @@ void addParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
                 strcpy(dummy.participantes[getParticipants(dummy)], part);
                 loop = 0;
 
+                /* Verifica a disponibilidade do participante a adicionar*/
                 if(validPerson(events, dummy, part))
                 {
                     events[r][i] = dummy;
@@ -685,6 +712,7 @@ void removeParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
     char placeholder[DIM_VARS];
     char *token;
     
+    /* Coloca o input em variaveis temporarias para efetuar pesquisa*/
     token = strtok(str, DELIM);
     strcpy(dummy.descricao, token);
     token = strtok(NULL, DELIM);
@@ -701,6 +729,7 @@ void removeParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
                 dummy = events[r][i];
                 loop = 0;
 
+                /* Caso so haja um participante nao e removido e mostra um erro*/
                 if(getParticipants(dummy) == 1)
                 {
 					if(!strcmp(dummy.participantes[0], placeholder))
@@ -721,6 +750,7 @@ void removeParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
     }
     else
     {
+        /* Caso o participante exista no evento, altera as variaveis para fazer remocao*/
         for(c = 0; c < getParticipants(dummy); c++)
         {
             if(!strcmp(dummy.participantes[c], placeholder))
@@ -730,6 +760,7 @@ void removeParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
             }
         }
 
+        /* Caso exista, remove o participante e faz "shift left" dos participantes a frente*/
         if(changed)
         {
             while(c+1 < getParticipants(dummy))
@@ -763,6 +794,7 @@ int main()
         fixInput(input);
         fixInput(input);
 
+        /* Escolhe o comando a efetuar consoante o output */
         switch (op)
         {
             case 'a':
