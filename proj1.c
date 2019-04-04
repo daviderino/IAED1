@@ -1,5 +1,5 @@
 /*
- * File:  ex.c
+ * File:  proj1.c
  * Author:  David Baptista 92446
  * Description: Projeto em C para gestao de eventos
 */
@@ -25,6 +25,9 @@ Constantes
 
 #define DELIM ":"           /* Caracter usado para delimitar o input */
 #define EMPTY ""            /* Espaco vazio */
+
+#define TRUE 1
+#define FALSE 0
 
 /*===================================================
 Estruturas
@@ -707,7 +710,7 @@ void removeParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
     int loop;
 
     int c;
-    int changed = 0;
+    int changed = FALSE;
 
     char placeholder[DIM_VARS];
     char *token;
@@ -727,7 +730,7 @@ void removeParticipant(char str[DIM_INPUT], Event events[NUM_ROOMS][DIM_ROOMS])
             if(!strcmp(events[r][i].descricao, dummy.descricao))
             {
                 dummy = events[r][i];
-                loop = 0;
+                loop = FALSE;
 
                 /* Caso so haja um participante nao e removido e mostra um erro*/
                 if(getParticipants(dummy) == 1)
@@ -785,7 +788,7 @@ int main()
     char input[DIM_INPUT];
     char op;
 
-    while(1)
+    while(TRUE)
     {    
         readString(input);
 
